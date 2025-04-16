@@ -363,12 +363,70 @@ const AboutProject = () => {
 };
 
 const AnalyticsDashboard = () => {
+  const [isFullScreen, setIsFullScreen] = useState(false);
+
+  const toggleFullScreen = () => {
+    setIsFullScreen(!isFullScreen);
+  };
+
   return (
-    <div className="bg-white shadow overflow-hidden sm:rounded-lg p-6">
-      <h2 className="text-2xl font-bold text-gray-900 mb-6">
-        Analytics Dashboard
-      </h2>
-      <div className="w-full h-96 md:h-screen max-h-screen overflow-hidden rounded">
+    <div
+      className={`bg-white shadow overflow-hidden sm:rounded-lg transition-all duration-300 ${
+        isFullScreen ? "fixed inset-0 z-50 p-0" : "p-6"
+      }`}
+    >
+      <div className="flex justify-between items-center mb-4">
+        <h2 className="text-2xl font-bold text-gray-900">
+          Analytics Dashboard
+        </h2>
+        <button
+          onClick={toggleFullScreen}
+          className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-md flex items-center transition-colors duration-200"
+        >
+          {isFullScreen ? (
+            <>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 mr-2"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+              Exit Fullscreen
+            </>
+          ) : (
+            <>
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                className="h-5 w-5 mr-2"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5v-4m0 4h-4m4 0l-5-5"
+                />
+              </svg>
+              View Fullscreen
+            </>
+          )}
+        </button>
+      </div>
+      <div
+        className={`w-full overflow-hidden rounded ${
+          isFullScreen ? "h-screen" : "h-96 md:h-screen max-h-screen"
+        }`}
+      >
         <iframe
           title="DSBI_dashboard"
           className="w-full h-full"
