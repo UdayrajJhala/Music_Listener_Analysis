@@ -223,6 +223,14 @@ const AboutProject = () => {
                     Percentage of repeat listens
                   </td>
                 </tr>
+                <tr className="hover:bg-gray-50">
+                  <td className="py-3 px-4 border-b font-medium">
+                    Longest Session Length
+                  </td>
+                  <td className="py-3 px-4 border-b text-gray-700">
+                    Length of the longest session of the user for in minutes
+                  </td>
+                </tr>
               </tbody>
             </table>
           </div>
@@ -538,568 +546,291 @@ const AnalyticsDashboard = () => {
       >
         <iframe
           title="DSBI_dashboard"
-          className="w-full h-full"
+          width="1140"
+          height="541.25"
           src="https://app.powerbi.com/reportEmbed?reportId=81e5713c-2e63-499e-99bd-95a28ab19c46&autoAuth=true&ctid=23035d1f-133c-44b5-b2ad-b3aef17baaa1"
-          frameBorder="0"
-          allowFullScreen={true}
-        />
+          frameborder="0"
+          allowFullScreen="true"
+        ></iframe>
       </div>
     </div>
   );
 };
 
 const PredictionModel = () => {
-  const [formData, setFormData] = useState({
-    Age: 30,
-    Country: "United States",
-    Streaming_Platform: "Spotify",
-    Top_Genre: "Pop",
-    Minutes_Streamed_Per_Day: 120,
-    Number_of_Songs_Liked: 200,
-    Most_Played_Artist: "Taylor Swift",
-    Subscription_Type: "Premium",
-    Listening_Time: "Afternoon",
-    Discover_Weekly_Engagement: 50,
-    "Repeat Song Rate (%)": 30,
-  });
+   const [formData, setFormData] = useState({
+     longest_session_duration: 45,
+     minutes_streamed_per_day: 120,
+     subscription_type: "Premium",
+   });
 
-  const [prediction, setPrediction] = useState(null);
-  const [isLoading, setIsLoading] = useState(false);
-  const [error, setError] = useState(null);
+   const [prediction, setPrediction] = useState(null);
+   const [probabilities, setProbabilities] = useState(null);
+   const [loading, setLoading] = useState(false);
+   const [error, setError] = useState(null);
 
-  const handleChange = (e) => {
-    const { name, value } = e.target;
-    // Convert numeric inputs to numbers
-    const parsedValue = [
-      "Age",
-      "Minutes_Streamed_Per_Day",
-      "Number_of_Songs_Liked",
-      "Discover_Weekly_Engagement",
-      "Repeat Song Rate (%)",
-    ].includes(name)
-      ? parseFloat(value)
-      : value;
+   const handleInputChange = (e) => {
+     const { name, value } = e.target;
+     setFormData({
+       ...formData,
+       [name]: name === "subscription_type" ? value : parseFloat(value),
+     });
+   };
 
-    setFormData({
-      ...formData,
-      [name]: parsedValue,
-    });
-  };
+   const handleSubmit = async (e) => {
+     e.preventDefault();
+     setLoading(true);
+     setError(null);
+     setPrediction(null);
+     setProbabilities(null);
 
-  const handleSubmit = async (e) => {
-    e.preventDefault();
-    setIsLoading(true);
-    setError(null);
+     try {
+       const response = await fetch("http://127.0.0.1:5000/predict", {
+         method: "POST",
+         headers: {
+           "Content-Type": "application/json",
+         },
+         body: JSON.stringify(formData),
+       });
 
-    try {
-      const response = await fetch("http://127.0.0.1:5000/predict", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(formData),
-      });
+       if (!response.ok) {
+         throw new Error(`Error: ${response.status}`);
+       }
 
-      const data = await response.json();
+       const data = await response.json();
+       setPrediction(data.prediction);
+       if (data.class_probabilities) {
+         setProbabilities(data.class_probabilities);
+       }
+     } catch (err) {
+       setError(err.message);
+     } finally {
+       setLoading(false);
+     }
+   };
 
-      if (!response.ok) {
-        throw new Error(data.error || "Error making prediction");
-      }
+   return (
+     <div className="bg-white shadow-xl rounded-lg overflow-hidden">
+       <div className="bg-gradient-to-r from-green-600 to-green-700 px-6 py-4">
+         <h2 className="text-2xl font-bold text-white flex items-center">
+           <svg
+             className="h-6 w-6 mr-2"
+             fill="none"
+             viewBox="0 0 24 24"
+             stroke="currentColor"
+           >
+             <path
+               strokeLinecap="round"
+               strokeLinejoin="round"
+               strokeWidth={2}
+               d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
+             />
+           </svg>
+           Listening Time Prediction Model
+         </h2>
+       </div>
 
-      setPrediction(data.streaming_segment);
-    } catch (err) {
-      setError(err.message);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+       <div className="p-6">
+         <div className="mb-8">
+           <div className="bg-green-50 p-4 rounded-lg border-l-4 border-green-500 mb-6">
+             <h3 className="text-lg font-semibold text-green-700 mb-2">
+               How It Works
+             </h3>
+             <p className="text-gray-700">
+               Our machine learning model predicts when you're most likely to
+               listen to music (Day, Afternoon, or Night) based on your
+               listening habits. Fill out the form below to get your
+               personalized prediction.
+             </p>
+           </div>
 
-  const countries = [
-    "United States",
-    "Japan",
-    "Germany",
-    "United Kingdom",
-    "Australia",
-    "South Korea",
-    "Canada",
-    "Brazil",
-    "France",
-    "India",
-    "Mexico",
-    "Spain",
-  ];
-  const platforms = [
-    "Spotify",
-    "Apple Music",
-    "YouTube",
-    "Amazon Music",
-    "Deezer",
-    "Tidal",
-    "Pandora",
-    "SoundCloud",
-  ];
-  const genres = [
-    "Pop",
-    "Rock",
-    "Hip Hop",
-    "R&B",
-    "EDM",
-    "Country",
-    "Jazz",
-    "Classical",
-    "Reggae",
-    "Folk",
-    "Metal",
-    "Indie",
-  ];
-  const artists = [
-    "Taylor Swift",
-    "Drake",
-    "Ed Sheeran",
-    "Billie Eilish",
-    "The Weeknd",
-    "Dua Lipa",
-    "Post Malone",
-    "Adele",
-    "Bad Bunny",
-    "BTS",
-    "Ariana Grande",
-  ];
-  const listeningTimes = ["Morning", "Afternoon", "Night"];
+           <form onSubmit={handleSubmit} className="space-y-6">
+             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 mb-1">
+                   Longest Session Duration (minutes)
+                 </label>
+                 <div className="mt-1 relative rounded-md shadow-sm">
+                   <input
+                     type="number"
+                     name="longest_session_duration"
+                     value={formData.longest_session_duration}
+                     onChange={handleInputChange}
+                     className="focus:ring-green-500 focus:border-green-500 block w-full pl-3 pr-12 sm:text-sm border-gray-300 rounded-md"
+                     min="1"
+                     step="1"
+                     required
+                   />
+                   <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                     <span className="text-gray-500 sm:text-sm">min</span>
+                   </div>
+                 </div>
+                 <p className="mt-1 text-xs text-gray-500">
+                   The length of your longest continuous music session
+                 </p>
+               </div>
 
-  return (
-    <div className="bg-white shadow-xl rounded-lg overflow-hidden transition-all duration-300 hover:shadow-2xl">
-      <div className="bg-gradient-to-r from-green-600 to-green-700 px-6 py-4">
-        <h2 className="text-2xl font-bold text-white">
-          Streaming Segment Prediction
-        </h2>
-      </div>
+               <div>
+                 <label className="block text-sm font-medium text-gray-700 mb-1">
+                   Minutes Streamed Per Day
+                 </label>
+                 <div className="mt-1 relative rounded-md shadow-sm">
+                   <input
+                     type="number"
+                     name="minutes_streamed_per_day"
+                     value={formData.minutes_streamed_per_day}
+                     onChange={handleInputChange}
+                     className="focus:ring-green-500 focus:border-green-500 block w-full pl-3 pr-12 sm:text-sm border-gray-300 rounded-md"
+                     min="1"
+                     step="1"
+                     required
+                   />
+                   <div className="absolute inset-y-0 right-0 pr-3 flex items-center pointer-events-none">
+                     <span className="text-gray-500 sm:text-sm">min</span>
+                   </div>
+                 </div>
+                 <p className="mt-1 text-xs text-gray-500">
+                   Average number of minutes you stream music daily
+                 </p>
+               </div>
+             </div>
 
-      <div className="p-6">
-        <div className="mb-6">
-          <p className="text-gray-700 leading-relaxed mb-4">
-            This tool uses a machine learning model to predict a user's
-            streaming segment based on their listening habits and preferences.
-            Fill out the form below with user data to get a prediction.
-          </p>
+             <div>
+               <label className="block text-sm font-medium text-gray-700 mb-1">
+                 Subscription Type
+               </label>
+               <select
+                 name="subscription_type"
+                 value={formData.subscription_type}
+                 onChange={handleInputChange}
+                 className="mt-1 block w-full pl-3 pr-10 py-2 text-base border-gray-300 focus:outline-none focus:ring-green-500 focus:border-green-500 sm:text-sm rounded-md"
+               >
+                 <option value="Premium">Premium</option>
+                 <option value="Free">Free</option>
+               </select>
+               <p className="mt-1 text-xs text-gray-500">
+                 Your subscription type on music streaming platforms
+               </p>
+             </div>
 
-          <div className="bg-green-50 p-4 rounded-lg border-l-4 border-green-500 mb-6">
-            <h3 className="text-lg font-semibold text-green-700 mb-2">
-              Streaming Segments
-            </h3>
-            <p className="text-gray-700">
-              Our model classifies users into five segments based on their daily
-              streaming activity:
-            </p>
-            <ul className="mt-2 list-disc list-inside text-gray-700">
-              <li>
-                <span className="font-medium">Light</span>
-              </li>
-              <li>
-                <span className="font-medium">Casual</span>
-              </li>
-              <li>
-                <span className="font-medium">Regular</span>
-              </li>
-              <li>
-                <span className="font-medium">Heavy</span>
-              </li>
-              <li>
-                <span className="font-medium">Power User</span>
-                hours daily
-              </li>
-            </ul>
-          </div>
-        </div>
+             <div className="flex items-center justify-center">
+               <button
+                 type="submit"
+                 disabled={loading}
+                 className={`px-6 py-3 border border-transparent text-base font-medium rounded-md shadow-sm text-white 
+                  ${
+                    loading ? "bg-green-400" : "bg-green-600 hover:bg-green-700"
+                  } 
+                  focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition-colors duration-200`}
+               >
+                 {loading ? (
+                   <span className="flex items-center">
+                     <svg
+                       className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
+                       xmlns="http://www.w3.org/2000/svg"
+                       fill="none"
+                       viewBox="0 0 24 24"
+                     >
+                       <circle
+                         className="opacity-25"
+                         cx="12"
+                         cy="12"
+                         r="10"
+                         stroke="currentColor"
+                         strokeWidth="4"
+                       ></circle>
+                       <path
+                         className="opacity-75"
+                         fill="currentColor"
+                         d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                       ></path>
+                     </svg>
+                     Processing...
+                   </span>
+                 ) : (
+                   "Predict Listening Time"
+                 )}
+               </button>
+             </div>
+           </form>
+         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          <div>
-            <h3 className="text-xl font-bold mb-4 text-green-700 border-b-2 border-green-100 pb-2">
-              Input User Data
-            </h3>
+         {error && (
+           <div className="bg-red-50 p-4 rounded-md mb-6">
+             <div className="flex">
+               <div className="flex-shrink-0">
+                 <svg
+                   className="h-5 w-5 text-red-400"
+                   xmlns="http://www.w3.org/2000/svg"
+                   viewBox="0 0 20 20"
+                   fill="currentColor"
+                 >
+                   <path
+                     fillRule="evenodd"
+                     d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
+                     clipRule="evenodd"
+                   />
+                 </svg>
+               </div>
+               <div className="ml-3">
+                 <h3 className="text-sm font-medium text-red-800">
+                   Error making prediction
+                 </h3>
+                 <p className="text-sm text-red-700 mt-1">{error}</p>
+                 <p className="text-sm text-red-700 mt-1">
+                   Please check if the API server is running.
+                 </p>
+               </div>
+             </div>
+           </div>
+         )}
 
-            <form onSubmit={handleSubmit} className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                {/* Age Input */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Age
-                  </label>
-                  <input
-                    type="number"
-                    name="Age"
-                    value={formData.Age}
-                    onChange={handleChange}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring focus:ring-green-200 focus:ring-opacity-50"
-                    min="13"
-                    max="100"
-                    required
-                  />
-                </div>
+         {prediction && (
+           <div className="bg-green-50 p-6 rounded-lg border border-green-100 shadow-inner">
+             <h3 className="text-xl font-bold text-green-800 mb-4">
+               Prediction Result
+             </h3>
 
-                {/* Country Selection */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Country
-                  </label>
-                  <select
-                    name="Country"
-                    value={formData.Country}
-                    onChange={handleChange}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring focus:ring-green-200 focus:ring-opacity-50"
-                    required
-                  >
-                    {countries.map((country) => (
-                      <option key={country} value={country}>
-                        {country}
-                      </option>
-                    ))}
-                  </select>
-                </div>
+             <div className="bg-white p-4 rounded-md shadow-sm mb-4">
+               <p className="text-sm font-medium text-gray-500">
+                 Based on your inputs, you're most likely to listen to music
+                 during:
+               </p>
+               <p className="text-3xl font-bold text-green-700 mt-2">
+                 {prediction}
+               </p>
+             </div>
 
-                {/* Streaming Platform */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Streaming Platform
-                  </label>
-                  <select
-                    name="Streaming_Platform"
-                    value={formData.Streaming_Platform}
-                    onChange={handleChange}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring focus:ring-green-200 focus:ring-opacity-50"
-                    required
-                  >
-                    {platforms.map((platform) => (
-                      <option key={platform} value={platform}>
-                        {platform}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Top Genre */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Top Genre
-                  </label>
-                  <select
-                    name="Top_Genre"
-                    value={formData.Top_Genre}
-                    onChange={handleChange}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring focus:ring-green-200 focus:ring-opacity-50"
-                    required
-                  >
-                    {genres.map((genre) => (
-                      <option key={genre} value={genre}>
-                        {genre}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Minutes Streamed */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Minutes Streamed Per Day
-                  </label>
-                  <input
-                    type="number"
-                    name="Minutes_Streamed_Per_Day"
-                    value={formData.Minutes_Streamed_Per_Day}
-                    onChange={handleChange}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring focus:ring-green-200 focus:ring-opacity-50"
-                    min="0"
-                    max="1000"
-                    required
-                  />
-                </div>
-
-                {/* Songs Liked */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Number of Songs Liked
-                  </label>
-                  <input
-                    type="number"
-                    name="Number_of_Songs_Liked"
-                    value={formData.Number_of_Songs_Liked}
-                    onChange={handleChange}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring focus:ring-green-200 focus:ring-opacity-50"
-                    min="0"
-                    max="10000"
-                    required
-                  />
-                </div>
-
-                {/* Most Played Artist */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Most Played Artist
-                  </label>
-                  <select
-                    name="Most_Played_Artist"
-                    value={formData.Most_Played_Artist}
-                    onChange={handleChange}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring focus:ring-green-200 focus:ring-opacity-50"
-                    required
-                  >
-                    {artists.map((artist) => (
-                      <option key={artist} value={artist}>
-                        {artist}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Subscription Type */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Subscription Type
-                  </label>
-                  <select
-                    name="Subscription_Type"
-                    value={formData.Subscription_Type}
-                    onChange={handleChange}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring focus:ring-green-200 focus:ring-opacity-50"
-                    required
-                  >
-                    <option value="Free">Free</option>
-                    <option value="Premium">Premium</option>
-                  </select>
-                </div>
-
-                {/* Listening Time */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Listening Time
-                  </label>
-                  <select
-                    name="Listening_Time"
-                    value={formData.Listening_Time}
-                    onChange={handleChange}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring focus:ring-green-200 focus:ring-opacity-50"
-                    required
-                  >
-                    {listeningTimes.map((time) => (
-                      <option key={time} value={time}>
-                        {time}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Discover Weekly Engagement */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Discover Weekly Engagement (%)
-                  </label>
-                  <input
-                    type="number"
-                    name="Discover_Weekly_Engagement"
-                    value={formData.Discover_Weekly_Engagement}
-                    onChange={handleChange}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring focus:ring-green-200 focus:ring-opacity-50"
-                    min="0"
-                    max="100"
-                    step="0.01"
-                    required
-                  />
-                </div>
-
-                {/* Repeat Song Rate */}
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Repeat Song Rate (%)
-                  </label>
-                  <input
-                    type="number"
-                    name="Repeat Song Rate (%)"
-                    value={formData["Repeat Song Rate (%)"]}
-                    onChange={handleChange}
-                    className="block w-full rounded-md border-gray-300 shadow-sm focus:border-green-500 focus:ring focus:ring-green-200 focus:ring-opacity-50"
-                    min="0"
-                    max="100"
-                    step="0.01"
-                    required
-                  />
-                </div>
-              </div>
-
-              <div className="mt-6">
-                <button
-                  type="submit"
-                  className="w-full bg-green-600 hover:bg-green-700 text-white py-2 px-4 rounded-md shadow-md transition-colors duration-200 flex items-center justify-center"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <>
-                      <svg
-                        className="animate-spin -ml-1 mr-3 h-5 w-5 text-white"
-                        xmlns="http://www.w3.org/2000/svg"
-                        fill="none"
-                        viewBox="0 0 24 24"
-                      >
-                        <circle
-                          className="opacity-25"
-                          cx="12"
-                          cy="12"
-                          r="10"
-                          stroke="currentColor"
-                          strokeWidth="4"
-                        ></circle>
-                        <path
-                          className="opacity-75"
-                          fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                        ></path>
-                      </svg>
-                      Processing...
-                    </>
-                  ) : (
-                    "Predict Streaming Segment"
-                  )}
-                </button>
-              </div>
-            </form>
-          </div>
-
-          <div>
-            <h3 className="text-xl font-bold mb-4 text-green-700 border-b-2 border-green-100 pb-2">
-              Prediction Result
-            </h3>
-
-            {error ? (
-              <div className="bg-red-50 p-4 rounded-lg border-l-4 border-red-500">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <svg
-                      className="h-5 w-5 text-red-400"
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-red-800">Error</h3>
-                    <div className="mt-2 text-sm text-red-700">
-                      <p>{error}</p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            ) : prediction ? (
-              <div className="bg-white p-6 rounded-lg shadow-md border border-gray-200">
-                <div className="text-center mb-4">
-                  <div className="inline-flex items-center justify-center w-16 h-16 rounded-full bg-green-100 text-green-600 mb-4">
-                    <svg
-                      className="h-8 w-8"
-                      fill="none"
-                      viewBox="0 0 24 24"
-                      stroke="currentColor"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth={2}
-                        d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"
-                      />
-                    </svg>
-                  </div>
-                  <h4 className="text-2xl font-bold text-gray-800 mb-2">
-                    Prediction Result
-                  </h4>
-                  <p className="text-gray-600 mb-6">
-                    Based on the input data, this user is classified as:
-                  </p>
-
-                  <div className="bg-green-600 text-white text-2xl font-bold py-3 px-8 rounded-lg inline-block shadow-md mb-6">
-                    {prediction}
-                  </div>
-
-                  <div className="text-left">
-                    <p className="text-gray-600 mb-2">
-                      <span className="font-medium">
-                        Key factors for this prediction:
-                      </span>
-                    </p>
-                    <ul className="text-gray-600 list-disc list-inside">
-                      <li>
-                        Daily streaming time:{" "}
-                        {formData.Minutes_Streamed_Per_Day} minutes
-                      </li>
-                      <li>Content preference: {formData.Top_Genre}</li>
-                      <li>
-                        Engagement level: {formData.Discover_Weekly_Engagement}%
-                        discovery engagement
-                      </li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-            ) : (
-              <div className="flex flex-col items-center justify-center space-y-4 mt-8">
-                <svg
-                  className="h-24 w-24 text-gray-300"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                  stroke="currentColor"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={1}
-                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                <p className="text-gray-500 italic text-lg">
-                  Enter user data and submit to see prediction results
-                </p>
-              </div>
-            )}
-
-            <div className="mt-6">
-              <div className="bg-blue-50 p-4 rounded-lg border-l-4 border-blue-500">
-                <div className="flex">
-                  <div className="flex-shrink-0">
-                    <svg
-                      className="h-5 w-5 text-blue-400"
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 20 20"
-                      fill="currentColor"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zM9 9a1 1 0 000 2v3a1 1 0 001 1h1a1 1 0 100-2v-3a1 1 0 00-1-1H9z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                  <div className="ml-3">
-                    <h3 className="text-sm font-medium text-blue-800">
-                      Configuration Note
-                    </h3>
-                    <div className="mt-2 text-sm text-blue-700">
-                      <p>
-                        This interface connects to the Flask API endpoint at{" "}
-                        <code>/predict</code>. Make sure your API is running and
-                        accessible to get predictions.
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
+             {probabilities && (
+               <div>
+                 <h4 className="text-md font-semibold text-green-700 mb-2">
+                   Probability Breakdown
+                 </h4>
+                 <div className="space-y-3">
+                   {Object.entries(probabilities).map(([time, probability]) => (
+                     <div key={time} className="flex items-center">
+                       <span className="w-20 text-sm font-medium text-gray-700">
+                         {time}:
+                       </span>
+                       <div className="w-full bg-gray-200 rounded-full h-3 ml-2">
+                         <div
+                           className="bg-green-600 h-3 rounded-full"
+                           style={{ width: `${probability * 100}%` }}
+                         ></div>
+                       </div>
+                       <span className="ml-2 text-sm font-medium text-gray-700">
+                         {(probability * 100).toFixed(1)}%
+                       </span>
+                     </div>
+                   ))}
+                 </div>
+               </div>
+             )}
+           </div>
+         )}
+       </div>
+     </div>
+   );
 };
 
 export default App;
